@@ -4,14 +4,23 @@ import time
 import json
 
 
-class TinyMFiDeviceApi( object ):
+class Device( object ):
+	""" Mfi base device class"""
+	def __init__(self, name, ip, mfi_data):
+		self.name = name
+		self.ip = ip
+		self.mfi_data = mfi_data
 
-	def __init__(self, ip="localhost", login="admin", password="password", use_https=False, verify_ssl=True):
+
+class MFiDevice( Device ):
+
+	def __init__(self, name, ip, mfi_data, login="admin", password="password", use_https=False, verify_ssl=True):
+		super().__init__(name, ip, mfi_data)
+
 		# settings
-		self.ip = "192.168.1.74"  # todo: fixme
 		self.login = login
-		self.password = password
-		self.use_https = use_https
+		self.password = password      #fixme: use config
+		self.use_https = use_https    #fixme: use config
 		self.verify_ssl = verify_ssl
 
 		# do not touch
@@ -88,9 +97,11 @@ class TinyMFiDeviceApi( object ):
 		return response
 
 
-class TinyMFiMPrortApi( object ):
+class MPrortDevice( Device ):
 
-	def __init__(self):
+	def __init__(self, name, ip, mfi_data):
+		super().__init__(name, ip, mfi_data)
+
 		# settings
 		self.ip = "192.168.1.51"
 		self.use_https = False

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Control Panel</title>
+</head>
+<body>
+
+<h1>Управление умным домом.</h1>
+
+<table><tbody>
+    <tr>
+        <td width="200"><b>Устройство</b></td>
+        <td width="200"><b>Состояние</b></td>
+        <td width="200"><b>Действия</b></td>
+    </tr>
+    <tr>
+        <td width="200">Датчик движения</td>
+        <td width="200"><output id="motionSensor1_Info">Нет данных</output></td>
+        <td width="200"></td>
+    </tr>
+    <tr>
+        <td width="200">Умная розетка</td>
+        <td width="200"> <output id="device1_Info">Нет данных</output> </td>
+        <td width="200"> <input type="button" id="1" class="device_toggle_Button" value="Включить"></td>
+    </tr>
+</tbody></table>
+
+</body>
+  <!--  подключаем jQuery  -->
+  <script src="js/jquery-3.4.1.js"></script>
+  <!--  скрипт управления умным домом  -->
+  <script src="js/control_panel_handler.js"></script>
+</html>
