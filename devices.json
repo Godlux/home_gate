@@ -1,16 +1,33 @@
 [
   {
-    "ip": "192.168.1.74",
-    "name": "mFi mPort",
-    "api": "mFi",
+    "name": "Датчик движения",
+    "id": 1,
+    "ip": "192.168.137.164",
     "login": "admin",
-    "password": "password"
+    "password": "password",
+    "api": "mFi",
+    "device": "mPort",
+    "port": 1,
+    "sensor_type": "motion"
   },
   {
-    "ip": "192.168.1.16",
-    "name": "mFi mPort",
-    "api": "mFi",
+    "name": "Датчик температуры",
+    "id": 2,
+    "ip": "192.168.137.164",
     "login": "admin",
-    "password": "password"
+    "password": "password",
+    "api": "mFi",
+    "device": "mPort",
+    "port": 2,
+    "sensor_type": "motion"
+  },
+  {
+    "name": "Умная розетка - Лампа",
+    "id": 3,
+    "ip": "192.168.137.17",
+    "login": "admin",
+    "password": "password",
+    "api": "mFi",
+    "device": "mPower"
   }
 ]

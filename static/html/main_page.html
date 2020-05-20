@@ -14,16 +14,23 @@
         <td width="200"><b>Состояние</b></td>
         <td width="200"><b>Действия</b></td>
     </tr>
-    <tr>
-        <td width="200">Датчик движения</td>
-        <td width="200"><output id="motionSensor1_Info">Нет данных</output></td>
-        <td width="200"></td>
+	{% for device in devices %}
+	<tr>
+        <td width="200">{{ device.name }}</td>
+        <td width="200"><output id="device_{{ device.id }}_info">Нет данных</output></td>
+        <td width="200">{% if get_type(device) == "powerable" %}<input type="button" id="device_{{ device.id }}_button" class="device_power_toggle_Button" value="Включить">{% endif %}</td>
     </tr>
-    <tr>
-        <td width="200">Умная розетка</td>
-        <td width="200"> <output id="device1_Info">Нет данных</output> </td>
-        <td width="200"> <input type="button" id="1" class="device_toggle_Button" value="Включить"></td>
-    </tr>
+    {% endfor %}
+{#    <tr>#}
+{#        <td width="200">Датчик движения</td>#}
+{#        <td width="200"><output id="motionSensor1_Info">Нет данных</output></td>#}
+{#        <td width="200"></td>#}
+{#    </tr>#}
+{#    <tr>#}
+{#        <td width="200">Умная розетка</td>#}
+{#        <td width="200"> <output id="device1_Info">Нет данных</output> </td>#}
+{#        <td width="200"> <input type="button" id="1" class="device_toggle_Button" value="Включить"></td>#}
+{#    </tr>#}
 </tbody></table>
 
 </body>

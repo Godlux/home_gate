@@ -1,42 +1,67 @@
 from api.abstract_api import ApiBase
-from .devices import Device
+from .devices import Device, MPowerDevice, MPortDevice
 from .mfi_device_listener import MfiListener
+import os
+import sys
 
 
 class MfiApi( ApiBase ):
-    """ The base class for api """
+	""" The base class for api """
 
-    def __init__(self):
-        self.mfi_device_listener = MfiListener()
-        self.mfi_device_listener.start()
+	def __init__(self):
+		self.mfi_device_listener = MfiListener()
+		self.mfi_device_listener.start()
 
-    def get_devices(self):
-        devices = list()
-        devices_dict = self.mfi_device_listener.devices
+	def get_devices(self):
+		import json
+		mfi_devices = list()
 
-        import json
-        with open ('devices.json', 'r') as registred_devices:
-            json.load(registred_devices)
+		# AUTO-SEARCH MODE
+		# devices_dict = self.mfi_device_listener.devices
+		#
+		# with open ('devices.json', 'r') as registred_devices:
+		# 	 json.load(registred_devices)
+		#
+		# 	 print(len(devices_dict))  # fixme debug
+		# 	 for device_ip in devices_dict:
+		# 		 data = devices_dict[device_ip]
+		# 		 print(f"D{device_ip}, DA{data}")
+		# 		 for registred_device in registred_devices:
+		# 			 if device_ip == registred_device["ip"]:
+		# 				 device = Device(name=registred_device["name"], ip=device_ip, mfi_data=data)
+		# 				 devices.append(device)
 
-            print(len(devices_dict))  # fixme debug
-            for device_ip in devices_dict:
-                data = devices_dict[device_ip]
-                print(f"D{device_ip}, DA{data}")
-                for registred_device in registred_devices:
-                    if device_ip == registred_device["ip"]:
-                        device = Device(name=registred_device["name"], ip=device_ip, mfi_data=data)
-                        devices.append(device)
+		# FILE MODE
+		dirname = os.path.split( sys.argv[0] )[0]
+		with open(dirname+'/devices.json', 'r') as registred_devices:
+			loaded_devices = json.load( registred_devices )
 
-        return devices
+			for device in loaded_devices:
+				# if device associated with other api - skipping
+				if device["api"] != "mFi":
+					continue
+				if device["device"] == "mPort":
+					mfi_devices.append( MPortDevice( name=device["name"], device_id=device["id"], ip=device["ip"], mfi_data="", sensor_id=device["port"] ) )
+				if device["device"] == "mPower":
+					mfi_devices.append( MPowerDevice(name=device["name"], device_id=device["id"], ip=device["ip"],  mfi_data="") )
 
-    def get_commands_for_device(self, device_id):
-        return str()
+			# preparing to next work
+			# import threading
+			for device in mfi_devices:
+				# thread = threading.Thread(target=device.do_login(), daemon=True)
+				# thread.start()
+				device.do_login()
 
-    def turn_on_device(self, device_id):
-        pass
+		return mfi_devices
 
-    def turn_off_device(self, device_id):
-        pass
+	def get_commands_for_device(self, device_id):
+		return str()
 
-    def send_command_to_device(self, device_id):
-        pass
+	def turn_on_device(self, device_id):
+		pass
+
+	def turn_off_device(self, device_id):
+		pass
+
+	def send_command_to_device(self, device_id):
+		pass

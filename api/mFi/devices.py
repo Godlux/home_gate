@@ -1,25 +1,25 @@
+from ..absctarct_devices import Device, PowerableDevice, ReadableDevice
 import threading
 import requests
 import time
 import json
 
 
-class Device( object ):
+class MFiDevice( Device ):
 	""" Mfi base device class"""
-	def __init__(self, name, ip, mfi_data):
-		self.name = name
-		self.ip = ip
+	def __init__(self, name, device_id, ip, mfi_data):
+		super().__init__( name=name, device_id=device_id, ip=ip )
 		self.mfi_data = mfi_data
 
 
-class MFiDevice( Device ):
+class MPowerDevice( MFiDevice, PowerableDevice ):
 
-	def __init__(self, name, ip, mfi_data, login="admin", password="password", use_https=False, verify_ssl=True):
-		super().__init__(name, ip, mfi_data)
+	def __init__(self, name, device_id, ip, mfi_data, login="admin", password="password", use_https=False, verify_ssl=True):
+		super().__init__(name, device_id, ip, mfi_data)
 
 		# settings
 		self.login = login
-		self.password = password      #fixme: use config
+		self.password = password
 		self.use_https = use_https    #fixme: use config
 		self.verify_ssl = verify_ssl
 
@@ -27,6 +27,7 @@ class MFiDevice( Device ):
 		self._http_prefix = "https" if self.use_https else "http"
 		self._wsgi_url = f"{self._http_prefix}://{self.ip}"
 		self._headers = None
+		self.sensor_id = 1     # correct id for MPowerDevice
 
 	def do_login(self):
 		"""
@@ -53,37 +54,53 @@ class MFiDevice( Device ):
 
 	def verify_login(self):
 		if self._headers is None:
-			input("Login incorrect, press Enter to continue")
-			raise Exception("_headers is None!")
+			return False
 		return True
 
-	def turn_on_device(self, id):
+	@staticmethod
+	def response_contains_login_page( response ):
+		if "Login" in response.text:
+			return True
+		return False
+
+	def turn_on_device(self):
 		## turn on device
 		# example: curl -X PUT -d "resource=1&output=1&dimmer_level=50" -b "AIROS_SESSIONID=012345678901012345678901012345678901" 192.168.1.45/sensors/1/
-		self.verify_login()
-		response = self._rsession.put(f"{self._wsgi_url}/sensors/{id}/", data={'output': 1, }, headers=self._headers, verify=self.verify_ssl)
-		open("turnOn_response.html", 'w').write(response.text)
+		response = self._rsession.put(f"{self._wsgi_url}/sensors/{self.sensor_id}/", data={'output': 1, }, headers=self._headers, verify=self.verify_ssl)
+		if self.response_contains_login_page( response ):
+			self.do_login()
+			return self.turn_on_device()
+			# open("turnOn_response.html", 'w').write(response.text)
+		print(f"DEBUG: TURNING ON : {response}")  # fixme: remove me
 		return response
 
-	def turn_off_device(self, id):
+	def turn_off_device(self):
 		## turn off device
 		# example: curl -X PUT -d "resource=1&output=1&dimmer_level=50" -b "AIROS_SESSIONID=012345678901012345678901012345678901" 192.168.1.45/sensors/1/
-		self.verify_login()
-		response = self._rsession.put(f"{self._wsgi_url}/sensors/{id}/", data={'output': 0, }, headers=self._headers, verify=self.verify_ssl)
-		open("turnOff_response.html", 'w').write(response.text)
+		response = self._rsession.put(f"{self._wsgi_url}/sensors/{self.sensor_id}/", data={'output': 0, }, headers=self._headers, verify=self.verify_ssl)
+		if self.response_contains_login_page( response ):
+			self.do_login()
+			return self.turn_off_device()
+			# open("turnOff_response.html", 'w').write(response.text)
+		print(f"DEBUG: TURNING OFF : {response}")  # fixme: remove me
 		return response
 
-	def get_device_info(self, id):
+	def get_power_state(self):
 		## turn off device
 		# example: curl -X PUT -d "resource=1&output=1&dimmer_level=50" -b "AIROS_SESSIONID=012345678901012345678901012345678901" 192.168.1.45/sensors/1/
-		self.verify_login()
-		response = self._rsession.get(f"{self._wsgi_url}/sensors/{id}/", headers=self._headers, verify=self.verify_ssl)
-		open("deviceInfo_response.html", 'w').write(response.text)
-		return response
+		response = self._rsession.get(f"{self._wsgi_url}/sensors/{self.sensor_id}/", headers=self._headers, verify=self.verify_ssl)
+		if self.response_contains_login_page( response ):
+			self.do_login()
+			return self.get_power_state()
+		data = response.json()
+		is_enabled = True if data["sensors"][0]["output"] == 1 else False
+		print(f'DEBUG: DEVICE ENABLED? : {is_enabled}')  # fixme: remove me
+		return is_enabled
 
 	def go_to_power_page(self, id):
 		## go to power page
-		self.verify_login()
+		if not self.verify_login():
+			self.do_login()
 		response = self._rsession.get(f"{self._wsgi_url}/sensors/{id}/", headers=self._headers, verify=self.verify_ssl)
 		open("powerpage_response.html", 'w').write(response.text)
 		return response
@@ -91,28 +108,29 @@ class MFiDevice( Device ):
 	def do_logout(self):
 		## logout
 		# example: curl -b "AIROS_SESSIONID=012345678901012345678901012345678901" 192.168.1.45/logout.cgi
-		self.verify_login()
+		if not self.verify_login():
+			return True
 		response = self._rsession.get(f"{self._wsgi_url}/logout.cgi", headers=self._headers, verify=self.verify_ssl)
 		open("afterlogout_response.html", 'w').write(response.text)
 		return response
 
 
-class MPrortDevice( Device ):
+class MPortDevice( MFiDevice, ReadableDevice ):
 
-	def __init__(self, name, ip, mfi_data):
-		super().__init__(name, ip, mfi_data)
+	def __init__(self, name, device_id, ip, mfi_data, sensor_id, login="admin", password="password", use_https=False, verify_ssl=True):
+		super().__init__(name, device_id, ip, mfi_data)
 
 		# settings
-		self.ip = "192.168.1.51"
-		self.use_https = False
-		self.verify_ssl = True
-		self.login = "admin"
-		self.password = "password"
+		self.login = login
+		self.password = password
+		self.use_https = use_https    #fixme: use config
+		self.verify_ssl = verify_ssl
 
 		# do not touch
 		self._http_prefix = "https" if self.use_https else "http"
 		self._wsgi_url = f"{self._http_prefix}://{self.ip}"
 		self._headers = None
+		self.sensor_id = sensor_id       # specified by 'port' in json config
 
 	def do_login(self):
 		## login
@@ -136,24 +154,37 @@ class MPrortDevice( Device ):
 
 	def verify_login(self):
 		if self._headers is None:
-			input("Login incorrect, press Enter to continue")
-			raise Exception("_headers is None!")
+			return False
 		return True
 
-	def get_sensor_info(self, id):
+	@staticmethod
+	def response_contains_login_page( response ):
+		if "Login" in response.text:
+			return True
+		return False
+
+	def get_sensor_info(self):
 		## turn off device
 		# example: curl -X PUT -d "resource=1&output=1&dimmer_level=50" -b "AIROS_SESSIONID=012345678901012345678901012345678901" 192.168.1.45/sensors/1/
 		self.verify_login()
-		response = self._rsession.get(f"{self._wsgi_url}/sensors/{id}/", headers=self._headers, verify=self.verify_ssl)
-		open("mPower_sensorInfo_response.html", 'w').write(response.text)
-		return response
+		response = self._rsession.get(f"{self._wsgi_url}/sensors/{self.sensor_id}/", headers=self._headers, verify=self.verify_ssl)
+		if self.response_contains_login_page( response ):
+			self.do_login()
+			return self.get_sensor_info()
+			# open("mPower_sensorInfo_response.html", 'w').write(response.text)
+		data = response.json()
+		info = "motion" if data["sensors"][0]["input1"] == 1 else "no motion"
+		return info
 
 	def get_sensors_info(self):
 		## turn off device
 		# example: curl -X PUT -d "resource=1&output=1&dimmer_level=50" -b "AIROS_SESSIONID=012345678901012345678901012345678901" 192.168.1.45/sensors/1/
 		self.verify_login()
 		response = self._rsession.get(f"{self._wsgi_url}/sensors/", headers=self._headers, verify=self.verify_ssl)
-		open("mPower_allSensorsInfo_response.html", 'w').write(response.text)
+		if self.response_contains_login_page( response ):
+			self.do_login()
+			return self.get_sensors_info()
+			# open("mPower_allSensorsInfo_response.html", 'w').write(response.text)
 		return response
 
 	def do_logout(self):
@@ -161,5 +192,7 @@ class MPrortDevice( Device ):
 		# example: curl -b "AIROS_SESSIONID=012345678901012345678901012345678901" 192.168.1.45/logout.cgi
 		self.verify_login()
 		response = self._rsession.get(f"{self._wsgi_url}/logout.cgi", headers=self._headers, verify=self.verify_ssl)
-		open("afterlogout_response.html", 'w').write(response.text)
-		return response
+		if self.response_contains_login_page( response ):
+			return True
+			# open("afterlogout_response.html", 'w').write(response.text)
+		return True

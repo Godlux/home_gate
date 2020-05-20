@@ -9,7 +9,7 @@ class MfiListener( threading.Thread ):
     devices = dict()
 
     # udpserver
-    def udp_server(self, host='192.168.1.52', port=10001):  # fixme: set host at config
+    def udp_server(self, host='localhost', port=10001):  # fixme: set host at config
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
