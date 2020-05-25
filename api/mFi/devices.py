@@ -1,6 +1,7 @@
 from ..absctarct_devices import Device, PowerableDevice, ReadableDevice
 import threading
 import requests
+from requests.exceptions import ConnectionError
 import time
 import json
 
@@ -14,7 +15,7 @@ class MFiDevice( Device ):
 
 class MPowerDevice( MFiDevice, PowerableDevice ):
 
-	def __init__(self, name, device_id, ip, mfi_data, login="admin", password="password", use_https=False, verify_ssl=True):
+	def __init__(self, name, device_id, ip, login, password, mfi_data, self_json, use_https=False, verify_ssl=True):
 		super().__init__(name, device_id, ip, mfi_data)
 
 		# settings
@@ -37,7 +38,12 @@ class MPowerDevice( MFiDevice, PowerableDevice ):
 
 		# Get cookies
 		self._rsession = requests.Session()
-		response = self._rsession.get(f"{self._wsgi_url}/login.cgi", verify=self.verify_ssl)
+
+		try:
+			response = self._rsession.get( f"{self._wsgi_url}/login.cgi", verify=self.verify_ssl )
+		except ConnectionError:
+			print(f"Устройство [{self.name}] по адресу [{self.ip}] не отвечает.")
+
 		# Set cookies
 		auth_cookies = self._rsession.cookies['AIROS_SESSIONID']
 		self._headers =  {
@@ -46,6 +52,7 @@ class MPowerDevice( MFiDevice, PowerableDevice ):
 		}
 		open("login_response.html", 'w').write(response.text)
 		open("cookies_log.txt", 'a').write(auth_cookies + "\n")
+
 		# Login with cookies
 		response = self._rsession.post(f"{self._wsgi_url}/login.cgi", data={'username': self.login, 'password': self.password}, headers=self._headers, verify=self.verify_ssl)
 		open("afterlogin_response.html", 'w').write(response.text)
@@ -117,7 +124,7 @@ class MPowerDevice( MFiDevice, PowerableDevice ):
 
 class MPortDevice( MFiDevice, ReadableDevice ):
 
-	def __init__(self, name, device_id, ip, mfi_data, sensor_id, login="admin", password="password", use_https=False, verify_ssl=True):
+	def __init__(self, name, device_id, ip, login, password, mfi_data, self_json, sensor_id, use_https=False, verify_ssl=True):
 		super().__init__(name, device_id, ip, mfi_data)
 
 		# settings
@@ -137,7 +144,12 @@ class MPortDevice( MFiDevice, ReadableDevice ):
 		# example: curl -X POST -d "username=admin&password=password" -b "AIROS_SESSIONID=012345678901" -k https://192.168.1.45/login.cgi
 		# get cookies
 		self._rsession = requests.Session()
-		response = self._rsession.get(f"{self._wsgi_url}/login.cgi", verify=self.verify_ssl)
+
+		try:
+			response = self._rsession.get(f"{self._wsgi_url}/login.cgi", verify=self.verify_ssl)
+		except ConnectionError:
+			print(f"Устройство [{self.name}] по адресу [{self.ip}] не отвечает.")
+
 		# set cookies
 		auth_cookies = self._rsession.cookies['AIROS_SESSIONID']
 		self._headers =  {

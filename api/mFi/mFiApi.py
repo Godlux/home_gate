@@ -3,6 +3,7 @@ from .devices import Device, MPowerDevice, MPortDevice
 from .mfi_device_listener import MfiListener
 import os
 import sys
+import time
 
 
 class MfiApi( ApiBase ):
@@ -16,9 +17,6 @@ class MfiApi( ApiBase ):
 		import json
 		mfi_devices = list()
 
-		# AUTO-SEARCH MODE
-		# devices_dict = self.mfi_device_listener.devices
-		#
 		# with open ('devices.json', 'r') as registred_devices:
 		# 	 json.load(registred_devices)
 		#
@@ -36,14 +34,32 @@ class MfiApi( ApiBase ):
 		with open(dirname+'/devices.json', 'r') as registred_devices:
 			loaded_devices = json.load( registred_devices )
 
+			# AUTO-SEARCH IP BY MAC
+			time.sleep( 30 )  # fixme: hack - waiting to search new devices
+			devices_by_mac_dict = self.mfi_device_listener.devices
+
 			for device in loaded_devices:
 				# if device associated with other api - skipping
 				if device["api"] != "mFi":
 					continue
+
+				mfi_data = ""
+				# Trying to find device by mac-address, if can't - use ip in config
+				try:
+					ip = devices_by_mac_dict[device["mac"]][0]
+				except KeyError:
+					try:
+						ip = devices_by_mac_dict[device["wifi_mac"]][0]
+					except KeyError:
+						print( f"Using config ip for device with mac [{device['mac']}] not found in devices list: {devices_by_mac_dict.keys()}" )
+						ip = device["ip"]
+
 				if device["device"] == "mPort":
-					mfi_devices.append( MPortDevice( name=device["name"], device_id=device["id"], ip=device["ip"], mfi_data="", sensor_id=device["port"] ) )
+					mfi_devices.append( MPortDevice( name=device["name"], device_id=device["id"], ip=ip, login=device["login"], password=device["password"], mfi_data=mfi_data, self_json=device, sensor_id=device["port"] ) )
 				if device["device"] == "mPower":
-					mfi_devices.append( MPowerDevice(name=device["name"], device_id=device["id"], ip=device["ip"],  mfi_data="") )
+					mfi_devices.append( MPowerDevice(name=device["name"], device_id=device["id"], ip=ip, login=device["login"], password=device["password"], mfi_data=mfi_data, self_json=device) )
+
+			self.mfi_device_listener.stop()
 
 			# preparing to next work
 			# import threading

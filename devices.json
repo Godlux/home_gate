@@ -1,33 +1,38 @@
 [
   {
-    "name": "Датчик движения",
-    "id": 1,
-    "ip": "192.168.137.164",
-    "login": "admin",
-    "password": "password",
-    "api": "mFi",
-    "device": "mPort",
-    "port": 1,
-    "sensor_type": "motion"
+	"name": "Датчик движения",
+	"id": 1,
+	"ip": "192.168.1.72",
+	"mac": "80:2a:a8:b2:80:56",
+	"wifi_mac": "80:2a:a8:b3:80:56",
+	"login": "admin",
+	"password": "password",
+	"api": "mFi",
+	"device": "mPort",
+	"port": 1,
+	"sensor_type": "motion"
   },
   {
-    "name": "Датчик температуры",
-    "id": 2,
-    "ip": "192.168.137.164",
-    "login": "admin",
-    "password": "password",
-    "api": "mFi",
-    "device": "mPort",
-    "port": 2,
-    "sensor_type": "motion"
+	"name": "Датчик температуры",
+	"id": 2,
+	"ip": "192.168.1.72",
+	"mac": "80:2a:a8:b2:80:56",
+	"wifi_mac": "80:2a:a8:b3:80:56",
+	"login": "admin",
+	"password": "password",
+	"api": "mFi",
+	"device": "mPort",
+	"port": 2,
+	"sensor_type": "motion"
   },
   {
-    "name": "Умная розетка - Лампа",
-    "id": 3,
-    "ip": "192.168.137.17",
-    "login": "admin",
-    "password": "password",
-    "api": "mFi",
-    "device": "mPower"
+	"name": "Умная розетка - Лампа",
+	"id": 3,
+	"ip": "192.168.1.74",
+	"mac": "04:18:d6:2b:f3:cf",
+	"login": "admin",
+	"password": "password",
+	"api": "mFi",
+	"device": "mPower"
   }
 ]

@@ -1,6 +1,7 @@
 from flask import Flask
 from flask import request, send_from_directory
 from flask import render_template
+from flask import make_response
 from api.absctarct_devices import PowerableDevice, ReadableDevice
 from api_handler import ApiHandler
 
@@ -10,7 +11,9 @@ app = Flask(__name__, template_folder='static/html/')
 # Active Routes
 @app.route('/')
 def show_main_page():
-	# send_from_directory('static/html/', "main_page.html")
+	if not check_auth_token( request_to_check=request ):
+		return show_login_page()
+
 	str_response = ""
 	for device in api_handler.get_all_devices():
 		str_response += device.name + ", \n"
@@ -32,6 +35,9 @@ def object_check_type_util():
 
 @app.route('/login')
 def show_login_page():
+	if check_auth_token( request_to_check=request ):
+		return show_main_page()
+
 	return send_from_directory('static/html/', "login_page.html")
 
 
@@ -39,26 +45,56 @@ def show_login_page():
 @app.route('/do_login', methods=['GET', 'POST'])
 def do_login():
 	data = request.json
+
 	from dynamic.login_handler import auth_user
-	return "true" if auth_user(data["login"], data["password"]) else "false"
+	auth_result = auth_user(data["login"], data["password"])
+	response = make_response("true" if auth_result else "false")
+
+	if auth_result:
+		response.set_cookie( "auth_token", "true", max_age=60 * 60 * 24 * 30 )
+
+	return response
 
 
 @app.route('/do_logout')
 def do_logout():
-	data = request.json
+	if not check_auth_token( request_to_check=request ):
+		return show_login_page()
+
+	response = make_response("true")
+	response.set_cookie( "auth_token", "true", max_age=60 * 60 * 24 * 30 )
+
+	return response
 
 
 @app.route('/api', methods=['GET', 'POST'])
 def send_to_api_handler():
+	if not check_auth_token( request_to_check=request ):
+		return "false"
+
 	data = request.json
 	return "true" if api_handler.handle(device_id=data["device"], action=data["action"]) else "false" # todo
 
 
 @app.route('/get_devices_info', methods=['GET', 'POST'])
 def return_device_info():
+	if not check_auth_token( request_to_check=request ):
+		return "false"
+
 	data = request.json
 	devices_info = api_handler.get_devices_info()
 	return devices_info
+
+
+def check_auth_token( request_to_check ):
+	if not request_to_check.cookies.get( 'auth_token' ):
+		return False
+	else:
+		cookie = request_to_check.cookies.get( 'auth_token' )
+		if cookie != "true":
+			return False
+
+	return True
 
 
 # Static files
