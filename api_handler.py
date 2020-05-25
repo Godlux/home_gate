@@ -24,7 +24,7 @@ class ApiHandler( threading.Thread ):
 			print("updating devices info...")
 			try:
 				self.update_devices_info()
-			except ConnectionError:
+			except Exception:
 				print("updating ends with fail, device not respond")
 			time.sleep(2)
 
