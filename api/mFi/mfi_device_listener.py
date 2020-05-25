@@ -45,6 +45,8 @@ class MfiListener( threading.Thread ):
 			log.info(f"[ {addr[0]} / {mac} ]")
 			if addr in self.devices:
 				continue
+			if mac is None:
+				continue
 
 			ip = addr[0]
 			port = addr[1]

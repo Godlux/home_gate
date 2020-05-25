@@ -12,6 +12,52 @@ class MFiDevice( Device ):
 		super().__init__( name=name, device_id=device_id, ip=ip )
 		self.mfi_data = mfi_data
 
+		# config prefill
+		self.use_https = False
+		self.verify_ssl = True
+		self.login = ""
+		self.password = ""
+
+		# do not touch
+		self._rsession = requests.Session()
+		self._http_prefix = "https" if self.use_https else "http"
+		self._wsgi_url = f"{self._http_prefix}://{self.ip}"
+		self._headers = None
+
+	def do_login( self ):
+		"""
+		## login
+		# example: curl -X POST -d "username=admin&password=password" -b "AIROS_SESSIONID=012345678901" -k https://192.168.1.45/login.cgi
+		"""
+		# Get cookies
+		response = self.get_query( url=f"{self._wsgi_url}/login.cgi" )
+		if not response:
+			self._headers = None
+			return False
+
+		# set cookies
+		auth_cookies = self._rsession.cookies['AIROS_SESSIONID']
+		self._headers = {
+			'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36',
+			'AIROS_SESSIONID': auth_cookies,
+			}
+		open( "login_response.html", 'w' ).write( response.text )
+		open( "cookies_log.txt", 'a' ).write( auth_cookies + "\n" )
+
+		## login with cookies
+		response = self._rsession.post( f"{self._wsgi_url}/login.cgi", data={'username': self.login, 'password': self.password}, headers=self._headers, verify=self.verify_ssl )
+		open( "afterlogin_response.html", 'w' ).write( response.text )
+
+		return response
+
+	def get_query( self, url ):
+		try:
+			response = self._rsession.get( url=url, verify=self.verify_ssl )
+		except ConnectionError:
+			print(f"Устройство [{self.name}] по адресу [{self.ip}] не отвечает.")
+			return False
+		return response
+
 
 class MPowerDevice( MFiDevice, PowerableDevice ):
 
@@ -21,43 +67,9 @@ class MPowerDevice( MFiDevice, PowerableDevice ):
 		# settings
 		self.login = login
 		self.password = password
+		self.sensor_id = 1     # correct id for MPowerDevice
 		self.use_https = use_https    #fixme: use config
 		self.verify_ssl = verify_ssl
-
-		# do not touch
-		self._http_prefix = "https" if self.use_https else "http"
-		self._wsgi_url = f"{self._http_prefix}://{self.ip}"
-		self._headers = None
-		self.sensor_id = 1     # correct id for MPowerDevice
-
-	def do_login(self):
-		"""
-		## login
-		# example: curl -X POST -d "username=admin&password=password" -b "AIROS_SESSIONID=012345678901" -k https://192.168.1.45/login.cgi
-		"""
-
-		# Get cookies
-		self._rsession = requests.Session()
-
-		try:
-			response = self._rsession.get( f"{self._wsgi_url}/login.cgi", verify=self.verify_ssl )
-		except ConnectionError:
-			print(f"Устройство [{self.name}] по адресу [{self.ip}] не отвечает.")
-
-		# Set cookies
-		auth_cookies = self._rsession.cookies['AIROS_SESSIONID']
-		self._headers =  {
-		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36',
-		'AIROS_SESSIONID': auth_cookies,
-		}
-		open("login_response.html", 'w').write(response.text)
-		open("cookies_log.txt", 'a').write(auth_cookies + "\n")
-
-		# Login with cookies
-		response = self._rsession.post(f"{self._wsgi_url}/login.cgi", data={'username': self.login, 'password': self.password}, headers=self._headers, verify=self.verify_ssl)
-		open("afterlogin_response.html", 'w').write(response.text)
-
-		return response
 
 	def verify_login(self):
 		if self._headers is None:
@@ -132,37 +144,7 @@ class MPortDevice( MFiDevice, ReadableDevice ):
 		self.password = password
 		self.use_https = use_https    #fixme: use config
 		self.verify_ssl = verify_ssl
-
-		# do not touch
-		self._http_prefix = "https" if self.use_https else "http"
-		self._wsgi_url = f"{self._http_prefix}://{self.ip}"
-		self._headers = None
 		self.sensor_id = sensor_id       # specified by 'port' in json config
-
-	def do_login(self):
-		## login
-		# example: curl -X POST -d "username=admin&password=password" -b "AIROS_SESSIONID=012345678901" -k https://192.168.1.45/login.cgi
-		# get cookies
-		self._rsession = requests.Session()
-
-		try:
-			response = self._rsession.get(f"{self._wsgi_url}/login.cgi", verify=self.verify_ssl)
-		except ConnectionError:
-			print(f"Устройство [{self.name}] по адресу [{self.ip}] не отвечает.")
-
-		# set cookies
-		auth_cookies = self._rsession.cookies['AIROS_SESSIONID']
-		self._headers =  {
-		'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36',
-		'AIROS_SESSIONID': auth_cookies,
-		}
-		open("login_response.html", 'w').write(response.text)
-		open("cookies_log.txt", 'a').write(auth_cookies + "\n")
-
-		## login with cookies
-		response = self._rsession.post(f"{self._wsgi_url}/login.cgi", data={'username': self.login, 'password': self.password}, headers=self._headers, verify=self.verify_ssl)
-		open("afterlogin_response.html", 'w').write(response.text)
-		return response
 
 	def verify_login(self):
 		if self._headers is None:

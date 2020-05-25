@@ -4,6 +4,7 @@ from flask import render_template
 from flask import make_response
 from api.absctarct_devices import PowerableDevice, ReadableDevice
 from api_handler import ApiHandler
+from dynamic.login_handler import auth_user, gen_cookies, check_auth_token
 
 app = Flask(__name__, template_folder='static/html/')
 
@@ -45,13 +46,12 @@ def show_login_page():
 @app.route('/do_login', methods=['GET', 'POST'])
 def do_login():
 	data = request.json
-
-	from dynamic.login_handler import auth_user
 	auth_result = auth_user(data["login"], data["password"])
 	response = make_response("true" if auth_result else "false")
 
 	if auth_result:
-		response.set_cookie( "auth_token", "true", max_age=60 * 60 * 24 * 30 )
+		cookies = gen_cookies( request=request )
+		response.set_cookie( "auth_token", cookies, max_age=60 * 60 * 24 * 30 )
 
 	return response
 
@@ -86,17 +86,6 @@ def return_device_info():
 	return devices_info
 
 
-def check_auth_token( request_to_check ):
-	if not request_to_check.cookies.get( 'auth_token' ):
-		return False
-	else:
-		cookie = request_to_check.cookies.get( 'auth_token' )
-		if cookie != "true":
-			return False
-
-	return True
-
-
 # Static files
 @app.route('/favicon.ico')
 def send_favicon():
@@ -116,5 +105,6 @@ def send_css(path):
 if __name__ == '__main__':
 	print( "Initializing Devices..." )
 	api_handler = ApiHandler()
+	api_handler.start()
 	print( "Devices Initialized." )
 	app.run(debug=True, use_debugger=False, use_reloader=False, passthrough_errors=True)

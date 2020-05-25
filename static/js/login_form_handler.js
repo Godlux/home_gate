@@ -1,5 +1,8 @@
-success = function () {
-  // send user to control panel page
+success = function (data) {
+    // send user to control panel page
+	if (data == "true") {
+		window.location.reload();
+	}
 };
 
 do_login = function () {
@@ -10,7 +13,9 @@ do_login = function () {
         type: "POST",
         url: "/do_login",
         data: JSON.stringify({ login: login, password: password } ),
-        success: null,
+        success: function (data) {
+			success(data);
+		},
         contentType : 'application/json'
     })
 };
